@@ -2,8 +2,7 @@
 using namespace std;
 #define ll long long
 
-vector<string> splitOn(string s, char on)
-{
+vector<string> splitOn(string s, char on){
     vector<string> res;
     s = s + on;
     string temp = "";
@@ -19,19 +18,17 @@ vector<string> splitOn(string s, char on)
 }
 
 
-// create_parking_lot <parking_lot_id> <no_of_floors> <no_of_slots_per_floor>
-// park_vehicle <vehicle_type> <reg_no> <color>
-// unpark_vehicle <ticket_id>
-// display <display_type> <vehicle_type>
-// Possible values of display_type: free_count, free_slots, occupied_slots
-// exit
-
-
+// Hard coded 
 const string CAR = "CAR";
 const string BIKE = "BIKE";
 const string TRUCK = "TRUCK";
+unordered_map<string, string> vehicleTypes;
 
-class Vehicle{
+unordered_map<string, pair<int,int>> slotsInfo;
+
+
+class Vehicle
+{
     public:
         string type;
         string regNo;
@@ -48,16 +45,26 @@ class ParkingLot{
         string id;
         int floors;
         int slots;
-        
-        set<vector<int>> emptyTruckSlots;
-        set<vector<int>> emptyBikesSlots;
-        set<vector<int>> emptyCarsSlots;
 
-        vector<int> truckFreeCount = {0};
-        vector<int> bikeFreeCount = {0};
-        vector<int> carFreeCount = {0};
-
+        unordered_map<string, set<vector<int>>> emptySlots;
+        unordered_map<string, vector<int>> freeCounts;
         unordered_map<int, unordered_map<int, Vehicle*>> parkedSpots;
+
+        void dispalyOccupiedSlotsHelper(string type, int floor, string count){
+            cout << "Occupied slots for " + type + " on Floor " + to_string(floor) + ": " + count +"\n";
+        }
+
+        void dispalyFreeCountHelper(string type, int floor, int count){
+            cout << ( "No. of free slots for " + type + " on Floor " + to_string(floor) + ": " + to_string(count) + "\n");
+        }
+
+        void displayFreeSlotsHelper(string type, int floor, string count){
+            cout << ("Free slots for " + type +" on Floor " + to_string(floor) + ": " + count + "\n" );
+        }
+
+        string parkingDispalyHelper(int floor, int slot){
+            return "Parked vehicle. Ticket ID: " + this->id + "_" + to_string(floor) + "_" + to_string(slot);
+        }
 
     public:
         ParkingLot(string id, int floors, int slots){
@@ -65,15 +72,21 @@ class ParkingLot{
             this->floors = floors;
             this->slots = slots;
             // Pre calculations
+
+            for(auto e : vehicleTypes){
+                emptySlots[e.first] = set<vector<int>>();
+                freeCounts[e.first] = vector<int>(1, 0);
+            }
+
             for(int floor = 1 ; floor <= floors ; ++floor){
-                emptyTruckSlots.insert({floor, 1});
-                truckFreeCount.push_back(1);
-                emptyBikesSlots.insert({floor, 2});
-                emptyBikesSlots.insert({floor, 3});
-                bikeFreeCount.push_back(2);
+                emptySlots[TRUCK].insert({floor, 1});
+                emptySlots[BIKE].insert({floor, 2});
+                emptySlots[BIKE].insert({floor, 3});
                 for(int slot = 4 ; slot <= slots ; ++slot)
-                    emptyCarsSlots.insert({floor, slot});
-                carFreeCount.push_back(slots - 3);
+                    emptySlots[CAR].insert({floor, slot});
+                freeCounts[TRUCK].push_back(1);
+                freeCounts[BIKE].push_back(2);
+                freeCounts[CAR].push_back(slots - 3);
             }
             cout << ("Created parking lot with " + to_string(floors)  +" floors and "+ to_string(slots) + " slots per floor\n");
         }
@@ -83,100 +96,36 @@ class ParkingLot{
             string ticket = "";
             int floor = -1;
             int slot = -1;
-            if(vehicle->type == TRUCK){
-                if(!emptyTruckSlots.empty()){
-                    vector<int> temp = *(emptyTruckSlots.begin());
-                    emptyTruckSlots.erase(emptyTruckSlots.begin());
-                    floor = temp[0];
-                    slot = temp[1];
-                    truckFreeCount[floor]--;
-                }
-            }
-            else if(vehicle->type == BIKE){
-                if(!emptyBikesSlots.empty()){
-                    vector<int> temp = *(emptyBikesSlots.begin());
-                    emptyBikesSlots.erase(emptyBikesSlots.begin());
-                    floor = temp[0];
-                    slot = temp[1];
-                    bikeFreeCount[floor]--;
-                }
-            }
-            else if(vehicle->type ==CAR){
-                if(!emptyCarsSlots.empty()){
-                    vector<int> temp = *(emptyCarsSlots.begin());
-                    emptyCarsSlots.erase(emptyCarsSlots.begin());
-                    floor = temp[0];
-                    slot = temp[1];
-                    carFreeCount[floor]--;
-                }
+            if(!emptySlots[vehicle->type].empty()){
+                vector<int> temp = *(emptySlots[vehicle->type].begin());
+                emptySlots[vehicle->type].erase(emptySlots[vehicle->type].begin());
+                floor = temp[0], slot = temp[1];
+                freeCounts[vehicle->type][floor]--;
             }
             if(floor == -1)
                 return "Parking Lot Full";
-
             parkedSpots[floor][slot] = vehicle;
-            
-            return 
-                "Parked vehicle. Ticket ID: " +
-                this->id + "_" + 
-                to_string(floor) + "_" + 
-                to_string(slot);   
+            return parkingDispalyHelper(floor, slot);
         }
-
-// unpark_vehicle PR1234_2_5
-// Unparked vehicle with Registration Number: WB-45-HO-9032 and Color: white
 
         string unpark(int floor, int slot){
             if( parkedSpots[floor].count(slot) == 0  )
                 return "Invalid Ticket";
             Vehicle *vehicle = parkedSpots[floor][slot];
             parkedSpots[floor].erase(slot);
-            if(slot == 1){
-                emptyTruckSlots.insert({floor, slot});
-                truckFreeCount[floor]++;
-            }
-            else if(slot <= 3){
-                emptyBikesSlots.insert({floor, slot});
-                bikeFreeCount[floor]++;
-            }
-            else{
-                emptyCarsSlots.insert({floor, slot});
-                carFreeCount[floor]++;
-            } 
+            emptySlots[vehicle->type].insert({floor, slot});
+            freeCounts[vehicle->type][floor]++;
             return "Unparked vehicle with Registration Number: " + vehicle->regNo +  " and Color: " + vehicle->color;
         }
 
-        void dispalyFreeCountHelper(string type, int floor, int count){
-            cout << ( "No. of free slots for " + type + " on Floor " + to_string(floor) + ": " + to_string(count) + "\n");
-        }
-
-// display free_count CAR
         void displayFreeCount(string type){
-            if(type == TRUCK)
-                for(int floor = 1 ; floor <= floors ; ++ floor)
-                    dispalyFreeCountHelper(type, floor, truckFreeCount[floor]);
-            if(type == BIKE)
-                for(int floor = 1 ; floor <= floors ; ++ floor)
-                    dispalyFreeCountHelper(type, floor, bikeFreeCount[floor]);
-            if(type == CAR)
-                for(int floor = 1 ; floor <= floors ; ++ floor)
-                    dispalyFreeCountHelper(type, floor, carFreeCount[floor]);
+            for(int floor = 1 ; floor <= floors ; ++ floor)
+                dispalyFreeCountHelper(type, floor, freeCounts[type][floor]);
         }
 
-        void displayFreeSlotsHelper(string type, int floor, string count){
-            cout << ("Free slots for " + type +" on Floor " + to_string(floor) + ": " + count + "\n" );
-        }
-
-// display free_slots BIKE
         void displayFreeSlots(string type){
             unordered_map<int,string> onFloor;
-            set<vector<int>> temp;
-            if(type == TRUCK)
-                temp = emptyTruckSlots;
-            if(type == BIKE)
-                temp = emptyBikesSlots;
-            if(type == CAR)
-                temp = emptyCarsSlots;
-            for(auto v : temp){
+            for(auto v : emptySlots[type]){
                 int floor = v[0], slot = v[1];
                 if(onFloor.count(floor))
                     onFloor[floor] = onFloor[floor] + "," + to_string(slot);
@@ -187,47 +136,19 @@ class ParkingLot{
                 displayFreeSlotsHelper(type, floor, onFloor[floor]);
         }
 
-        void dispalyOccupiedSlotsHelper(string type, int floor, string count){
-            cout << "Occupied slots for " + type + " on Floor " + to_string(floor) + ": " + count +"\n";
-        }
-
-// display occupied_slots CAR
-// Occupied slots for TRUCK on Floor 2: 1
         void displayOccupiedSlots(string type){
-            if(type == TRUCK){
-                for(int floor = 1 ; floor <= floors ; ++floor){
-                    string s = "";
-                    if(parkedSpots[floor][1] != NULL)
-                        s = "1";
-                    
-                    dispalyOccupiedSlotsHelper(type, floor, s);
-                }
-            } else if(type == BIKE){
-                for(int floor = 1 ; floor <= floors ; ++floor){
-                    string s = "";
-                    if(parkedSpots[floor][2] != NULL)
-                        s = "2";
-                    if(parkedSpots[floor][3] != NULL )
-                        s = s + ",3";
-                    dispalyOccupiedSlotsHelper(type, floor, s);
-                }
-            } else if(type == CAR){
-                for(int floor = 1 ; floor <= floors ; ++floor){
-                    string s = "";
-                    for(int slot = 3 ; slot <= slots ; ++slot){
-                        if(parkedSpots[floor][slot] != NULL ){
+            for(int floor = 1 ; floor <= floors ; ++floor){
+                string s = "";
+                for(int slot = slotsInfo[type].first ; slot <= slotsInfo[type].second ; ++slot)
+                    if(parkedSpots[floor][slot] != NULL )
                             if(s.empty())
                                 s = to_string(slot);
                             else
                                 s = s + "," + to_string(slot);
-                        }
-                    }
-                    dispalyOccupiedSlotsHelper(type, floor, s);
-                }
+                dispalyOccupiedSlotsHelper(type, floor, s);
             }
         }
 };
-
 
 
 int main(){
@@ -237,6 +158,14 @@ int main(){
     #endif
     ios_base::sync_with_stdio(0);
     cin.tie(0); cout.tie(0);
+
+    // Init
+
+    vehicleTypes[CAR] = CAR;
+    vehicleTypes[BIKE] = BIKE;
+    vehicleTypes[TRUCK] = TRUCK;
+
+    
 
     ParkingLot *parkingLot = NULL;
 
@@ -250,15 +179,19 @@ int main(){
         if(ins[0] == "exit")
             loop = false;
 
-        // create_parking_lot PR1234 2 6
-        else if(ins[0] == "create_parking_lot" )
-            parkingLot = new ParkingLot(ins[1], stoi(ins[2]), stoi(ins[3]));
-        
-        // park_vehicle CAR KA-01-DB-1234 black
-        else if(ins[0] == "park_vehicle"){
-            cout << parkingLot->park(new Vehicle(ins[1], ins[2], ins[3])) << "\n";
+        else if(ins[0] == "create_parking_lot" ){
+            string id = ins[1];
+            int floors = stoi(ins[2]);
+            int slots = stoi(ins[3]);
+            parkingLot = new ParkingLot(id, floors, slots);
+            slotsInfo[TRUCK] = {1, 1};
+            slotsInfo[BIKE] = {2, 2};
+            slotsInfo[CAR] = {3, slots};
         }
-        // unpark_vehicle PR1234_2_5
+        
+        else if(ins[0] == "park_vehicle")
+            cout << parkingLot->park(new Vehicle(ins[1], ins[2], ins[3])) << "\n";
+        
         else if(ins[0] == "unpark_vehicle"){
             vector<string> ticket = splitOn(ins[1], '_');
             cout << parkingLot->unpark(stoi(ticket[1]), stoi(ticket[2])) << "\n";
