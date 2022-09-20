@@ -50,16 +50,16 @@ class ParkingLot{
         unordered_map<string, vector<int>> freeCounts;
         unordered_map<int, unordered_map<int, Vehicle*>> parkedSpots;
 
-        void dispalyOccupiedSlotsHelper(string type, int floor, string count){
-            cout << "Occupied slots for " + type + " on Floor " + to_string(floor) + ": " + count +"\n";
+        string dispalyOccupiedSlotsHelper(string type, int floor, string count){
+            return  "Occupied slots for " + type + " on Floor " + to_string(floor) + ": " + count;
         }
 
-        void dispalyFreeCountHelper(string type, int floor, int count){
-            cout << ( "No. of free slots for " + type + " on Floor " + to_string(floor) + ": " + to_string(count) + "\n");
+        string dispalyFreeCountHelper(string type, int floor, int count){
+            return  "No. of free slots for " + type + " on Floor " + to_string(floor) + ": " + to_string(count);
         }
 
-        void displayFreeSlotsHelper(string type, int floor, string count){
-            cout << ("Free slots for " + type +" on Floor " + to_string(floor) + ": " + count + "\n" );
+        string displayFreeSlotsHelper(string type, int floor, string count){
+            return "Free slots for " + type +" on Floor " + to_string(floor) + ": " + count ;
         }
 
         string parkingDispalyHelper(int floor, int slot){
@@ -72,7 +72,6 @@ class ParkingLot{
             this->floors = floors;
             this->slots = slots;
             // Pre calculations
-
             for(auto e : vehicleTypes){
                 emptySlots[e.first] = set<vector<int>>();
                 freeCounts[e.first] = vector<int>(1, 0);
@@ -91,7 +90,6 @@ class ParkingLot{
             cout << ("Created parking lot with " + to_string(floors)  +" floors and "+ to_string(slots) + " slots per floor\n");
         }
 
-// park_vehicle CAR KA-01-DB-1234 black
         string park(Vehicle *vehicle){
             string ticket = "";
             int floor = -1;
@@ -120,9 +118,8 @@ class ParkingLot{
 
         void displayFreeCount(string type){
             for(int floor = 1 ; floor <= floors ; ++ floor)
-                dispalyFreeCountHelper(type, floor, freeCounts[type][floor]);
+                cout << dispalyFreeCountHelper(type, floor, freeCounts[type][floor]) << "\n";
         }
-
         void displayFreeSlots(string type){
             unordered_map<int,string> onFloor;
             for(auto v : emptySlots[type]){
@@ -133,9 +130,8 @@ class ParkingLot{
                     onFloor[floor] = to_string(slot);
             }
             for(int floor = 1 ; floor <= floors ; ++ floor)
-                displayFreeSlotsHelper(type, floor, onFloor[floor]);
+                cout << displayFreeSlotsHelper(type, floor, onFloor[floor]) << "\n";
         }
-
         void displayOccupiedSlots(string type){
             for(int floor = 1 ; floor <= floors ; ++floor){
                 string s = "";
@@ -145,7 +141,7 @@ class ParkingLot{
                                 s = to_string(slot);
                             else
                                 s = s + "," + to_string(slot);
-                dispalyOccupiedSlotsHelper(type, floor, s);
+                cout << dispalyOccupiedSlotsHelper(type, floor, s) << "\n";
             }
         }
 };
@@ -166,7 +162,6 @@ int main(){
     vehicleTypes[TRUCK] = TRUCK;
 
     
-
     ParkingLot *parkingLot = NULL;
 
     bool loop = true;
