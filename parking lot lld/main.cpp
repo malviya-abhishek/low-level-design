@@ -91,7 +91,6 @@ class ParkingLot{
         }
 
         string park(Vehicle *vehicle){
-            string ticket = "";
             int floor = -1;
             int slot = -1;
             if(!emptySlots[vehicle->type].empty()){
@@ -180,8 +179,8 @@ int main(){
             int slots = stoi(ins[3]);
             parkingLot = new ParkingLot(id, floors, slots);
             slotsInfo[TRUCK] = {1, 1};
-            slotsInfo[BIKE] = {2, 2};
-            slotsInfo[CAR] = {3, slots};
+            slotsInfo[BIKE] = {2, 3};
+            slotsInfo[CAR] = {4, slots};
         }
         
         else if(ins[0] == "park_vehicle")
